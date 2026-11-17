@@ -1,0 +1,944 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src __SCRIPT_HASH__ https://cdn.jsdelivr.net/npm/mermaid@11.17.2/; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>grasp</title>
+<style>
+:root {
+  --bg: #fbfaf8; --fg: #1d1d1f; --muted: #66666c; --line: #e4e2dd; --card: #ffffff;
+  --red: #c92a2a; --red-bg: #fdecec; --yellow: #9a6700; --yellow-bg: #fdf6e3;
+  --gray: #6e6e73; --gray-bg: #f1f1f2; --accent: #2f6fde; --accent-bg: #eaf1fd;
+  --code-bg: #f6f5f2; --hl: #fff1b8; --ok: #2b8a3e; --ok-bg: #e6f4ea;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16171a; --fg: #ececee; --muted: #a0a0a8; --line: #2e2f35; --card: #1e1f23;
+    --red: #ff8080; --red-bg: #3a1f22; --yellow: #f0c060; --yellow-bg: #352c19;
+    --gray: #a0a0a8; --gray-bg: #26272b; --accent: #8ab4ff; --accent-bg: #1f2a40;
+    --code-bg: #1a1b1f; --hl: #4a3f12; --ok: #69db7c; --ok-bg: #1d3324;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 16px/1.7 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", "Segoe UI", sans-serif;
+  word-break: keep-all; overflow-wrap: anywhere;
+}
+code, pre, .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 0.88em; }
+code { background: var(--code-bg); padding: 0.05em 0.2em; border-radius: 4px; }
+pre, .codeview { tab-size: 4; -moz-tab-size: 4; }
+.layout { display: grid; grid-template-columns: 270px minmax(0, 1fr); min-height: 100vh; }
+nav {
+  position: sticky; top: 0; height: 100vh; overflow: auto;
+  border-right: 1px solid var(--line); padding: 22px 14px; background: var(--card);
+}
+nav h1 { font-size: 15px; margin: 0 6px 4px; line-height: 1.4; }
+nav .sub { font-size: 12.5px; color: var(--muted); margin: 0 6px 16px; }
+nav button {
+  display: flex; align-items: center; gap: 8px; width: 100%; text-align: left;
+  border: 0; background: none; color: var(--fg); padding: 8px 10px; border-radius: 8px;
+  font: inherit; font-size: 14px; line-height: 1.4; cursor: pointer;
+}
+nav button:hover { background: var(--gray-bg); }
+nav button[aria-current="page"] { background: var(--accent-bg); color: var(--accent); font-weight: 600; }
+nav .done { margin-left: auto; color: var(--ok); font-size: 13px; }
+nav .progress { margin: 14px 10px 0; font-size: 12.5px; color: var(--muted); }
+nav .bar { height: 6px; background: var(--gray-bg); border-radius: 3px; margin-top: 6px; overflow: hidden; }
+nav .bar > i { display: block; height: 100%; background: var(--ok); width: 0; transition: width .3s; }
+nav .keys { margin: 18px 10px 0; font-size: 12px; color: var(--muted); }
+main { padding: 36px 48px 120px; max-width: 1000px; width: 100%; min-width: 0; }
+.view[hidden] { display: none; }
+h2 { font-size: 26px; line-height: 1.35; margin: 4px 0 18px; }
+h3 { font-size: 18px; margin: 34px 0 10px; }
+.eyebrow { font-size: 13px; color: var(--muted); letter-spacing: .02em; }
+.lede { font-size: 20px; line-height: 1.6; font-weight: 600; margin: 8px 0 20px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; margin: 12px 0; }
+.action { border-left: 4px solid var(--accent); }
+.warn { border-left: 4px solid var(--red); background: var(--red-bg); }
+.warn h4, .action h4 { margin: 0 0 6px; font-size: 14px; }
+.grade { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding: 2px 10px; border-radius: 999px; white-space: nowrap; }
+.grade.red { color: var(--red); background: var(--red-bg); }
+.grade.yellow { color: var(--yellow); background: var(--yellow-bg); }
+.grade.gray { color: var(--gray); background: var(--gray-bg); }
+.chunks { display: grid; gap: 10px; margin: 12px 0; }
+.chunk-card { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; text-align: left; font: inherit; color: inherit; width: 100%; margin: 0; }
+button.chunk-card { cursor: pointer; }
+button.chunk-card:hover { border-color: var(--accent); }
+.chunk-card.gray { opacity: .85; }
+.chunk-card .num { font-size: 22px; font-weight: 700; color: var(--muted); grid-row: span 2; }
+.chunk-card .t { font-weight: 600; }
+.chunk-card .s { color: var(--muted); font-size: 14.5px; }
+figure { margin: 18px 0; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; min-width: 0; }
+figure > .fhead { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 10px; }
+figure > .fhead .ftitle { font-weight: 700; }
+.zoom { font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--bg); color: var(--accent); border-radius: 6px; padding: 2px 10px; cursor: pointer; white-space: nowrap; }
+figcaption { font-size: 14px; color: var(--muted); margin-top: 10px; }
+.diagram { overflow-x: auto; text-align: center; }
+.diagram svg { height: auto; }
+.overview .diagram { max-height: 62vh; overflow: auto; }
+.diagram-fallback { text-align: left; }
+.diagram-fallback .note { font-size: 13px; color: var(--red); margin-bottom: 6px; }
+.overlay { position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 96%, transparent); z-index: 10; overflow: auto; padding: 56px 24px 24px; }
+.overlay .close { position: fixed; top: 14px; right: 20px; }
+.overlay .diagram { text-align: center; }
+pre { background: var(--code-bg); border-radius: 8px; padding: 12px 14px; overflow-x: auto; margin: 0; line-height: 1.55; white-space: pre-wrap; }
+.ba { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.ba .side h5 { margin: 0 0 6px; font-size: 13px; }
+.ba .before h5 { color: var(--muted); }
+.ba .after h5 { color: var(--accent); }
+.ba .text { padding: 10px 12px; border-radius: 8px; background: var(--code-bg); }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+th, td { border-bottom: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: 13px; }
+tr.hl td { background: var(--hl); }
+.codeview { background: var(--code-bg); border-radius: 8px; padding: 8px 0; }
+.codeview .file { font-size: 12.5px; color: var(--muted); padding: 2px 14px 8px; }
+.codeview .ln { display: grid; grid-template-columns: 4.2em minmax(0, 1fr); line-height: 1.55; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13.5px; }
+.codeview .ln .n { color: var(--muted); text-align: right; padding-right: 14px; user-select: none; }
+.codeview .cutmark { color: var(--muted); font-style: italic; }
+.codeview .ln .c { white-space: pre-wrap; padding-right: 14px; }
+.codeview .ln.hl { background: var(--hl); }
+.codeview .note { margin: 4px 14px 8px 4.2em; padding: 6px 10px; border-left: 3px solid var(--accent); background: var(--card); white-space: normal; font-size: 14px; border-radius: 0 6px 6px 0; }
+.look li { margin: 6px 0; }
+.ref { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13.5px; color: var(--accent); background: var(--accent-bg); border: 0; padding: 2px 8px; border-radius: 6px; cursor: pointer; text-decoration: none; }
+.ref:hover { text-decoration: underline; }
+.lvl { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; margin-right: 6px; white-space: nowrap; }
+.lvl.run { color: var(--ok); background: var(--ok-bg); }
+.lvl.read { color: var(--accent); background: var(--accent-bg); }
+.lvl.claimed { color: var(--gray); background: var(--gray-bg); }
+.lvl.inferred { color: var(--yellow); background: var(--yellow-bg); }
+.lvl.unverified { color: var(--red); background: var(--red-bg); }
+.cautions li { margin: 8px 0; }
+.quiz { border: 2px dashed var(--accent); }
+.quiz h4 { margin: 0 0 8px; font-size: 15px; color: var(--accent); }
+textarea { width: 100%; min-height: 76px; font: inherit; font-size: 15px; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); resize: vertical; }
+.btn { font: inherit; font-size: 14.5px; padding: 7px 16px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer; margin: 8px 8px 0 0; }
+.btn.ghost { background: transparent; color: var(--accent); }
+.btn:disabled { opacity: .5; cursor: default; }
+.reveal { margin-top: 10px; padding: 10px 14px; border-radius: 8px; background: var(--accent-bg); }
+.foot { display: flex; justify-content: space-between; align-items: center; margin-top: 40px; padding-top: 18px; border-top: 1px solid var(--line); gap: 12px; flex-wrap: wrap; }
+.foot label { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+dfn { font-style: normal; border-bottom: 1.5px dotted var(--accent); cursor: help; }
+.gloss dt { font-weight: 700; margin-top: 8px; }
+.gloss dd { margin: 0 0 4px; color: var(--muted); }
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 8px 16px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 20; }
+.toast.show { opacity: .92; }
+ul.plain { padding-left: 1.2em; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 860px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  nav { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  main { padding: 24px 18px 80px; }
+  .ba { grid-template-columns: minmax(0, 1fr); }
+}
+@media print {
+  nav, .zoom, .btn, textarea { display: none !important; }
+  .layout { display: block; } .view[hidden] { display: block !important; }
+  .overview .diagram { max-height: none; }
+}
+.mapgrid { display: grid; gap: 8px 28px; }
+/* Stacked (narrow, or a diagram too wide for two columns): the orientation diagram comes before the chunk list. */
+.mapgrid .overview { order: -1; }
+@media (min-width: 1320px) {
+  .mapgrid.two .overview { order: 0; }
+  main.wide { max-width: 1360px; }
+  .mapgrid.two { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); align-items: start; }
+  .mapgrid.two .overview { position: sticky; top: 16px; }
+}
+.docbadge { display: inline-block; font-size: 12.5px; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: var(--yellow-bg); color: var(--yellow); margin: 0 6px 6px 0; }
+.spot { margin-top: 6px; font-size: 13.5px; }
+.coverage { border-left: 4px solid var(--gray); }
+.coverage h4 { margin: 0 0 6px; font-size: 14px; }
+.scrollhint { font-size: 12.5px; color: var(--muted); margin-top: 6px; text-align: right; }
+td.nw, th.nw { white-space: nowrap; }
+.verify { margin-top: 8px; font-size: 14px; }
+.mismatch { margin-top: 10px; padding: 10px 14px; border-radius: 8px; background: var(--yellow-bg); }
+nav .sub { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+nav .chk { margin-left: 4px; font-size: 11.5px; color: var(--ok); }
+
+.compare { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin: 12px 0 4px; }
+.compare > div { border-radius: 10px; padding: 12px 14px; }
+.compare .mine { background: var(--gray-bg); }
+.compare .theirs { background: var(--accent-bg); }
+.compare h5 { margin: 0 0 6px; font-size: 13px; }
+.gap { margin-top: 10px; padding: 10px 14px; border-radius: 8px; background: var(--yellow-bg); }
+.badge { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--yellow-bg); color: var(--yellow); margin-left: 6px; white-space: nowrap; }
+.selfcheck .pt { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { font: inherit; font-size: 12.5px; border: 0; background: var(--bg); color: var(--fg); padding: 3px 9px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.seg button.dispute[aria-pressed="true"] { background: var(--yellow); color: #fff; }
+.cmd { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
+.cmd code { white-space: pre-wrap; }
+details.coverage > summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+.corrections { border-left: 4px solid var(--yellow); background: var(--yellow-bg); }
+.corrections h4 { margin: 0 0 6px; font-size: 14px; }
+td, th { overflow-wrap: anywhere; }
+.spotbelow { margin: -4px 0 4px 56px; }
+.snippop { display: block; margin: 8px 0; padding: 10px 12px; border: 1px solid var(--accent); border-radius: 10px; background: var(--card); max-width: 100%; }
+.snippop .codeview { margin-top: 6px; }
+.cmd { flex-wrap: wrap; } .cmd > span:first-child, .spot .lbl { white-space: nowrap; flex-shrink: 0; }
+.diagram svg .messageText, .diagram svg .edgeLabel { paint-order: stroke; stroke: var(--card); stroke-width: 5px; stroke-linejoin: round; }
+.exportbox { position: fixed; inset: 10% 15%; z-index: 30; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+.exportbox textarea { flex: 1; font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
+@media (max-width: 860px) { .compare { grid-template-columns: minmax(0, 1fr); } }
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav id="nav" aria-label="목차"></nav>
+  <main id="main"></main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script type="application/json" id="grasp-data">__GRASP_DATA__</script>
+<script>
+(() => {
+  "use strict";
+  const rawData = document.getElementById("grasp-data").textContent;
+  let data;
+  try { data = JSON.parse(rawData); } catch (e) { document.body.textContent = "grasp: 페이지 데이터를 읽지 못했습니다."; return; }
+  const arr = v => (Array.isArray(v) ? v : []);
+  const obj = v => (v && typeof v === "object" && !Array.isArray(v) ? v : {});
+  // Data is validated by build.py, but every read still goes through these guards so that
+  // an unexpected value degrades to empty text instead of breaking the page.
+  const txt = v => (typeof v === "string" ? v : typeof v === "number" && isFinite(v) ? String(v) : "");
+  const int = v => (Number.isSafeInteger(v) ? v : null);
+  data = obj(data);
+  const isReport = data.kind === "report";
+  const LEVEL = { run: "실행해서 확인", read: isReport ? "원문에서 확인" : "코드에서 확인", claimed: "원문이 주장", inferred: "추정", unverified: "미확인" };
+  const GRADE = { red: ["🔴", "직접 확인"], yellow: ["🟡", "grasp 판단: 훑어봐도 됨"], gray: ["⚪", "grasp 판단: 건너뛰어도 됨"] };
+  const MERMAID_URL = "https://cdn.jsdelivr.net/npm/mermaid@11.17.2/dist/mermaid.esm.min.mjs";
+  const dark = !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const verifying = location.search.includes("grasp-verify");
+
+  // ---- saved state ------------------------------------------------------
+  // Saved answers belong to this exact page content; a rebuilt page with changed questions starts fresh.
+  function hash(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
+  const storeKey = "grasp:" + hash(rawData);
+  const SHAPE = { answers: "string", before: "string", revealed: ["answered", "skip", "peek", "late"], done: "boolean", ticks: ["have", "miss", "dispute"], judge: ["agree", "unchecked", "dispute"], opened: "boolean" };
+  const state = {};
+  for (const k of Object.keys(SHAPE)) state[k] = {};
+  if (!verifying) {
+    let saved = {};
+    try { saved = obj(JSON.parse(localStorage.getItem(storeKey))); } catch (_) {}
+    for (const [k, rule] of Object.entries(SHAPE)) {
+      for (const [key, val] of Object.entries(obj(saved[k]))) {
+        if (Array.isArray(rule) ? rule.includes(val) : typeof val === rule) state[k][key] = val;
+      }
+    }
+  }
+  function saveState() {
+    if (verifying) return;
+    try { localStorage.setItem(storeKey, JSON.stringify(state)); } catch (_) {}
+  }
+  document.title = "grasp · " + txt(data.title);
+
+  // Every piece of data is inserted with createTextNode / setAttribute, never innerHTML:
+  // target code and reports may contain arbitrary markup.
+  function el(tag, attrs, ...kids) {
+    const e = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (v === undefined || v === null || v === false) continue;
+      if (k === "class") e.className = v;
+      else if (typeof v === "function") e.addEventListener(k.replace(/^on/, ""), v);
+      else e.setAttribute(k, v === true ? "" : String(v));
+    }
+    for (const k of kids.flat(Infinity)) {
+      if (k === undefined || k === null || k === false) continue;
+      e.append(k instanceof Node ? k : document.createTextNode(String(k)));
+    }
+    return e;
+  }
+
+  // ---- inline text ------------------------------------------------------
+  // Only `code`, ``code with ` inside`` and **bold** (bold may contain code). Everything else stays text,
+  // except file:line references that build.py checked: those become the same chips as "볼 곳".
+  // build.py records every checked token, so the page never links a location nobody verified.
+  const refTable = obj(data._refs);
+  const refSources = arr(data._ref_source).map(txt).filter(Boolean);
+  let refRe = null;
+  try { if (refSources.length) refRe = new RegExp(refSources.map(x => "(?:" + x + ")").join("|"), "gu"); } catch (_) { refRe = null; }
+  const pageRev = txt(data.rev);
+  function lookup(token, rev) { const r = refTable[(rev || pageRev || "") + "|" + token]; return r && typeof r === "object" ? r : null; }
+  function chipFor(r) { return refButton({ file: r.file, line: r.line, end: r.end, rev: txt(r.rev) || undefined }); }
+  function refsIn(text, rev, plain) {
+    if (!refRe || plain) return [text];
+    const out = [];
+    let last = 0;
+    for (const m of text.matchAll(refRe)) {
+      const r = lookup(m[0], rev);
+      if (!r) continue;
+      if (m.index > last) out.push(text.slice(last, m.index));
+      out.push(chipFor(r));
+      last = m.index + m[0].length;
+    }
+    if (last < text.length) out.push(text.slice(last));
+    return out;
+  }
+  // plain = true inside buttons and links: interactive chips cannot be nested there.
+  function rich(v, rev, plain) {
+    const s = txt(v);
+    if (!s) return [];
+    return s.split(/(``.+?``|\*\*(?:(?!\*\*).)+\*\*|`[^`]+`)/g).filter(p => p !== "").map(p => {
+      if (p.length > 4 && p.startsWith("``") && p.endsWith("``")) return el("code", {}, p.slice(2, -2).replace(/^ (.*) $/, "$1"));
+      if (p.length > 4 && p.startsWith("**") && p.endsWith("**")) return el("strong", {}, rich(p.slice(2, -2), rev, plain));
+      if (p.length > 2 && p.startsWith("`") && p.endsWith("`")) {
+        const inner = p.slice(1, -1);
+        const r = plain ? null : lookup(inner, rev);
+        return r ? chipFor(r) : el("code", {}, plain ? inner : refsIn(inner, rev, plain));
+      }
+      return refsIn(p, rev, plain);
+    });
+  }
+  function para(v) { return el("p", {}, rich(v)); }
+  function list(items) { return el("ul", { class: "plain" }, arr(items).map(i => el("li", {}, rich(i)))); }
+
+  // Glossary terms get a dotted underline on their first appearance in each view, in reading order.
+  const glossary = arr(data.glossary).map(obj).filter(g => txt(g.term) && txt(g.term).length <= 80);
+  const termMap = new Map(glossary.map(g => [txt(g.term), txt(g.def)]));
+  const terms = [...termMap.keys()].sort((a, b) => b.length - a.length);
+  const NO_GLOSS = "h1,h2,h3,h4,h5,button,a,textarea,pre,.codeview,.diagram,dfn,.gloss,.ref,nav,.eyebrow,.exportbox";
+  function findTerms(text, seen) {
+    // Literal, longest-first scan; no regex built from data.
+    const hits = [];
+    let i = 0;
+    while (i < text.length) {
+      const t = terms.find(w => !seen.has(w) && text.startsWith(w, i));
+      if (t) { hits.push([i, t]); seen.add(t); i += t.length; } else i++;
+    }
+    return hits;
+  }
+  function applyGlossary(root, seen) {
+    if (!terms.length) return;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT);
+    const todo = [];
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      if (n.nodeType === 1) {
+        if (n.tagName === "CODE" && !n.closest(NO_GLOSS) && termMap.has(n.textContent) && !seen.has(n.textContent)) {
+          seen.add(n.textContent); todo.push([n, null]);
+        }
+        continue;
+      }
+      if (!n.parentElement || n.parentElement.closest(NO_GLOSS + ",code")) continue;
+      const hits = findTerms(n.nodeValue, seen);
+      if (hits.length) todo.push([n, hits]);
+    }
+    for (const [n, hits] of todo) {
+      if (!hits) { const d = el("dfn", { title: termMap.get(n.textContent), tabindex: 0 }); n.replaceWith(d); d.append(n); continue; }
+      for (const [idx, word] of hits.reverse()) {
+        const mid = n.splitText(idx); mid.splitText(word.length);
+        const d = el("dfn", { title: termMap.get(word), tabindex: 0 }); mid.replaceWith(d); d.append(mid);
+      }
+    }
+  }
+
+  function toast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove("show"), 1800);
+  }
+  function exportBox(text) {
+    const ta = el("textarea", { readonly: true, "aria-label": "내 답변" });
+    ta.value = text;
+    const box = el("div", { class: "exportbox", role: "dialog", "aria-label": "답변 복사" },
+      el("strong", {}, "자동 복사가 막혀 있습니다. 아래를 전부 선택해서 복사해 주세요."), ta,
+      el("button", { class: "btn", type: "button", onclick: () => box.remove() }, "닫기"));
+    document.body.append(box);
+    ta.focus(); ta.select();
+  }
+  async function copy(text, msg, showOnFail) {
+    try { await navigator.clipboard.writeText(text); toast(msg || "복사했습니다"); return; } catch (_) {}
+    const ta = el("textarea", { style: "position:fixed;opacity:0" });
+    ta.value = text; document.body.append(ta); ta.select();
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch (_) {}
+    ta.remove();
+    if (ok) toast(msg || "복사했습니다");
+    else if (showOnFail) exportBox(text);
+    else toast("복사하지 못했습니다: " + text);
+  }
+
+  // ---- file references --------------------------------------------------
+  // Editor links are built only from a fixed list of schemes, so data cannot point them elsewhere.
+  const EDITORS = {
+    "vscode": (p, l) => "vscode://file" + p + ":" + l,
+    "vscode-insiders": (p, l) => "vscode-insiders://file" + p + ":" + l,
+    "cursor": (p, l) => "cursor://file" + p + ":" + l,
+    "windsurf": (p, l) => "windsurf://file" + p + ":" + l,
+    "idea": (p, l) => "idea://open?file=" + encodeURIComponent(p) + "&line=" + l
+  };
+  const encPath = p => p.split("/").map(encodeURIComponent).join("/");
+  // A reference shows the lines build.py read (when it could), so checking grasp costs one click.
+  const snipLines = obj(obj(data._snips).lines), snipRanges = obj(obj(data._snips).ranges), snipCut = obj(obj(data._snips).cut);
+  const jkey = (...parts) => JSON.stringify(parts);
+  const shq = x => "'" + String(x).replace(/'/g, "'\\''") + "'";
+  function gitShow(oid, file, a, b) {
+    const root = txt(data.root);
+    // "<oid>:./<file>" is resolved relative to -C <root>, the same way build.py read it.
+    return "git " + (root ? "-C " + shq(root) + " " : "") + "show " + shq(oid + ":./" + file) + " | sed -n '" + a + "," + b + "p' | tr -d '\\000-\\010\\013\\014\\016-\\037\\177'";
+    // tr drops terminal control bytes (ESC and friends) from untrusted source; tabs, newlines and UTF-8 stay.
+  }
+  function openSnippet(btn, r, rev, label) {
+    document.querySelectorAll(".snippop").forEach(x => x.remove());
+    const sec = btn.closest("section");
+    if (sec && sec._chunkId) { state.opened["p" + sec._chunkId] = true; saveState(); }
+    const lineEnd = int(r.end) || r.line;
+    const range = arr(snipRanges[jkey(rev || "", r.file, r.line, lineEnd)]);
+    const store = obj(snipLines[jkey(rev || "", r.file)]);
+    const cut = obj(snipCut[jkey(rev || "", r.file)]);
+    const oid = txt(obj(data._oids)[rev]) || rev;
+    const cmd = rev ? gitShow(oid, r.file, r.line, lineEnd) : r.file + ":" + r.line + (lineEnd !== r.line ? "-" + lineEnd : "");
+    const close = () => pop.remove();
+    const revText = rev ? " @" + rev + (oid && oid !== rev ? " (" + oid.slice(0, 12) + ")" : "") : "";
+    const pop = el("div", { class: "snippop", role: "dialog", "aria-label": label },
+      el("div", { class: "fhead" }, el("strong", {}, label + revText),
+        el("span", {}, el("button", { class: "zoom", type: "button", onclick: () => copy(cmd, rev ? "명령을 복사했습니다" : "경로를 복사했습니다") }, rev ? "git 명령 복사" : "경로 복사"), " ",
+          el("button", { class: "zoom", type: "button", onclick: close }, "닫기"))));
+    const a = int(range[0]), b = int(range[1]);
+    if (a && b && store[String(a)] !== undefined) {
+      const view = el("div", { class: "codeview" });
+      for (let n = a; n <= b && store[String(n)] !== undefined; n++) {
+        const full = int(cut[String(n)]);
+        view.append(el("div", { class: "ln" + (n >= r.line && n <= lineEnd ? " hl" : "") }, el("span", { class: "n" }, n),
+          el("span", { class: "c" }, txt(store[String(n)]) || " ", full ? el("span", { class: "cutmark" }, ` … (${full}자 중 앞부분만 표시)`) : null)));
+      }
+      pop.append(view);
+      if (Object.keys(cut).some(k => Number(k) >= a && Number(k) <= b)) pop.append(el("div", { class: "eyebrow" }, "긴 줄은 앞부분만 보여 줍니다. 줄 전체는 위 버튼으로 열어 보세요."));
+      if (lineEnd > b) pop.append(el("div", { class: "eyebrow" }, `${a}-${b}행만 보여 줍니다. 나머지(${b + 1}-${lineEnd}행)는 위 버튼으로 열어 보세요.`));
+    } else {
+      pop.append(el("div", { class: "eyebrow" }, "이 페이지에는 줄 내용이 들어 있지 않습니다. 위 버튼으로 경로나 명령을 복사해 직접 여세요."));
+    }
+    btn.after(pop);
+  }
+  function refButton(r) {
+    r = obj(r);
+    const file = txt(r.file), rev = txt(r.rev) || pageRev;
+    const line = int(r.line) || 1, end = int(r.end);
+    const label = file + ":" + line + (end && end !== line ? "-" + end : "");
+    const mk = Object.prototype.hasOwnProperty.call(EDITORS, data.editor) ? EDITORS[data.editor] : null;
+    const root = txt(data.root);
+    if (mk && !rev && root.startsWith("/")) {
+      const abs = root.replace(/\/+$/, "") + "/" + file.replace(/^\/+/, "");
+      const link = el("a", { class: "ref", href: mk(data.editor === "idea" ? abs : encPath(abs), line), title: "에디터에서 열기",
+        onclick: () => { const sec = link.closest("section"); if (sec && sec._chunkId) { state.opened["p" + sec._chunkId] = true; saveState(); } } }, label);
+      return link;
+    }
+    const shown = rev && rev !== pageRev ? label + " @" + rev.slice(0, 12) : label;
+    const b = el("button", { class: "ref", type: "button", title: "이 줄 보기", onclick: e => { e.stopPropagation(); openSnippet(b, { file, line, end: end || line }, rev, label); } }, shown);
+    return b;
+  }
+  const refs = l => arr(l).map(r => [refButton(r), " "]);
+  const lvl = e => el("span", { class: "lvl " + (LEVEL[e] ? e : "unverified") }, LEVEL[e] || "근거 수준 없음");
+
+  // ---- diagrams ---------------------------------------------------------
+  let mermaidP = null;
+  function getMermaid() {
+    if (!mermaidP) {
+      mermaidP = import(MERMAID_URL).then(m => {
+        const mm = m.default;
+        mm.initialize({ startOnLoad: false, securityLevel: "strict", theme: dark ? "dark" : "default",
+          themeVariables: dark ? { edgeLabelBackground: "#1e1f23" } : { edgeLabelBackground: "#ffffff" },
+          fontFamily: "-apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" });
+        return mm;
+      });
+    }
+    return mermaidP;
+  }
+  const CLASSDEF = dark
+    ? "\nclassDef red fill:#3a1f22,stroke:#ff8080,stroke-width:2px,color:#ffd6d6\nclassDef yellow fill:#352c19,stroke:#f0c060,color:#fbe7b5\nclassDef gray fill:#26272b,stroke:#6e6e73,color:#a0a0a8,stroke-dasharray:4 3\nclassDef new fill:#1f2a40,stroke:#8ab4ff,color:#dbe7ff"
+    : "\nclassDef red fill:#fdecec,stroke:#c92a2a,stroke-width:2px,color:#5c0f0f\nclassDef yellow fill:#fdf6e3,stroke:#b7791f,color:#4d3800\nclassDef gray fill:#f1f1f2,stroke:#9a9aa0,color:#55555a,stroke-dasharray:4 3\nclassDef new fill:#eaf1fd,stroke:#2f6fde,color:#0f2a5c";
+  let diagramSeq = 0;
+  const diagrams = [];
+  let renderQueue = Promise.resolve(); // Mermaid must render one diagram at a time.
+
+  function mermaidBox(source) {
+    const box = el("div", { class: "diagram", "data-mermaid": "pending" }, el("div", { class: "eyebrow" }, "다이어그램을 그리는 중…"));
+    box._src = txt(source);
+    diagrams.push(box);
+    return box;
+  }
+  // Sizing needs the box to be visible; hidden boxes are fitted when their view is shown.
+  function fitSvg(svg, box) {
+    if (!box.clientWidth) { box._needsFit = true; return; }
+    box._needsFit = false;
+    const vb = svg.viewBox && svg.viewBox.baseVal;
+    const w = vb && vb.width ? vb.width : svg.getBoundingClientRect().width;
+    box._naturalWidth = Math.round(w || 0);
+    // A wide overview does not fit the side column: give it the full width instead.
+    const grid = box.closest(".mapgrid.two");
+    if (grid && w > box.clientWidth / 0.9) grid.classList.remove("two");
+    svg.removeAttribute("width");
+    svg.style.maxWidth = "none";
+    const cw = box.clientWidth || 860;
+    // Never shrink below 75% of natural size; scroll instead, so labels stay readable.
+    const width = w <= cw ? w : Math.max(cw, w * 0.75);
+    svg.style.width = Math.round(width) + "px";
+    const old = box.nextElementSibling;
+    if (old && old.classList.contains("scrollhint")) old.remove();
+    if (width > cw + 4) box.after(el("div", { class: "scrollhint" }, "→ 옆으로 더 있습니다. 스크롤하거나 \"크게 보기\"를 누르세요"));
+  }
+  function renderDiagrams(root) {
+    const boxes = diagrams.filter(b => b.dataset.mermaid === "pending" && root.contains(b));
+    if (!boxes.length) return renderQueue;
+    boxes.forEach(b => { b.dataset.mermaid = "queued"; });
+    renderQueue = renderQueue.then(async () => {
+      let mm;
+      try { mm = await getMermaid(); }
+      catch (_) { boxes.forEach(b => fallback(b, "다이어그램 라이브러리를 불러오지 못했습니다 (오프라인일 수 있음). 원본을 그대로 보여 줍니다.", "offline")); return; }
+      for (const b of boxes) {
+        let src = b._src;
+        if (/^\s*(flowchart|graph)\b/.test(src)) src += CLASSDEF;
+        try {
+          const { svg } = await mm.render("grasp-d" + (++diagramSeq), src);
+          b.innerHTML = svg; // sanitized by Mermaid under securityLevel "strict"
+          b.querySelectorAll("a").forEach(a => a.replaceWith(...a.childNodes)); // no navigation out of diagrams
+          const s = b.querySelector("svg");
+          if (s) { const vb = s.viewBox && s.viewBox.baseVal; b._naturalWidth = Math.round((vb && vb.width) || 0); b._naturalHeight = Math.round((vb && vb.height) || 0); fitSvg(s, b); }
+          b.dataset.mermaid = "ok";
+        } catch (e) {
+          fallback(b, "다이어그램 문법 오류: " + String((e && e.message) || e).split("\n")[0], "failed");
+        }
+      }
+    });
+    return renderQueue;
+  }
+  function fallback(b, msg, status) {
+    b.dataset.mermaid = status;
+    b.replaceChildren(el("div", { class: "diagram-fallback" }, el("div", { class: "note" }, msg), el("pre", {}, b._src)));
+  }
+  function openZoom(box) {
+    const svg = box.querySelector("svg");
+    if (!svg) return;
+    const clone = svg.cloneNode(true);
+    clone.style.width = (box._naturalWidth || 1200) + "px";
+    clone.style.maxWidth = "none";
+    const close = () => { ov.remove(); document.removeEventListener("keydown", esc); };
+    const esc = e => { if (e.key === "Escape") close(); };
+    const ov = el("div", { class: "overlay", role: "dialog", "aria-label": "다이어그램 크게 보기" },
+      el("button", { class: "btn close", type: "button", onclick: close }, "닫기 (Esc)"),
+      el("div", { class: "diagram" }, clone));
+    document.addEventListener("keydown", esc);
+    document.body.append(ov);
+    ov.querySelector(".close").focus();
+  }
+
+  // ---- visuals ----------------------------------------------------------
+  const splitCode = s => txt(s).replace(/\n+$/, "").split("\n");
+  function cell(tag, c, rev) {
+    const s = txt(c);
+    return el(tag, { class: s.length <= 8 ? "nw" : null, scope: tag === "th" ? "col" : null }, rich(s, rev));
+  }
+  function visual(v) {
+    v = obj(v);
+    const fig = el("figure", {});
+    const head = el("div", { class: "fhead" }, el("div", { class: "ftitle" }, rich(v.title), v.evidence ? [" ", lvl(v.evidence)] : null));
+    fig.append(head);
+    switch (v.type) {
+      case "mermaid": {
+        const box = mermaidBox(v.source);
+        head.append(el("button", { class: "zoom", type: "button", onclick: () => openZoom(box) }, "크게 보기"));
+        fig.append(box);
+        break;
+      }
+      case "before_after": {
+        const side = (s, cls, dflt) => {
+          s = obj(s);
+          return el("div", { class: "side " + cls }, el("h5", {}, txt(s.label) ? rich(s.label) : dflt),
+            typeof s.code === "string" ? el("pre", {}, el("code", {}, s.code)) : el("div", { class: "text" }, rich(s.text)));
+        };
+        fig.append(el("div", { class: "ba" }, side(v.before, "before", "전"), side(v.after, "after", "후")));
+        break;
+      }
+      case "trace":
+      case "table": {
+        const hl = new Set(arr(v.highlight_rows).filter(Number.isSafeInteger));
+        fig.append(el("div", { class: "tablewrap" }, el("table", {},
+          el("thead", {}, el("tr", {}, arr(v.columns).map(c => cell("th", c)))),
+          el("tbody", {}, arr(v.rows).map((r, i) => el("tr", { class: hl.has(i) ? "hl" : null }, arr(r).map((c, j) => cell("td", c, txt(obj(v.column_rev)[String(j)]) || undefined))))))));
+        break;
+      }
+      case "code": {
+        const start = int(v.start_line) > 0 ? int(v.start_line) : 1;
+        const lines = splitCode(v.code);
+        const hl = new Set(arr(v.highlight).filter(Number.isSafeInteger));
+        const notes = new Map(arr(v.notes).map(obj).filter(n => int(n.line)).map(n => [n.line, n.text]));
+        const view = el("div", { class: "codeview" });
+        if (txt(v.file)) view.append(el("div", { class: "file" }, refButton({ file: v.file, line: start, end: start + lines.length - 1, rev: v.rev })));
+        lines.forEach((line, i) => {
+          const n = start + i;
+          view.append(el("div", { class: "ln" + (hl.has(n) ? " hl" : "") }, el("span", { class: "n" }, n), el("span", { class: "c" }, line || " ")));
+          if (notes.has(n)) view.append(el("div", { class: "note" }, rich(notes.get(n))));
+        });
+        fig.append(view);
+        break;
+      }
+      default: fig.append(para(v.text));
+    }
+    if (txt(v.caption)) fig.append(el("figcaption", {}, rich(v.caption)));
+    return fig;
+  }
+
+  // ---- questions --------------------------------------------------------
+  // grasp's answer is shown as an analysis with its evidence level and where to check it,
+  // never as an answer key: the analysis can be wrong.
+  function analysis(q, label) {
+    return el("div", {},
+      el("div", {}, el("strong", {}, label + " "), lvl(q.evidence)),
+      el("div", { style: "margin-top:4px" }, rich(q.answer)),
+      txt(q.explain) ? el("div", { style: "margin-top:6px" }, rich(q.explain)) : null,
+      arr(q.look).length ? el("div", { class: "verify" }, "직접 확인: ", refs(q.look)) : null,
+      txt(q.repro) ? el("div", { class: "verify cmd" }, el("span", {}, "직접 돌려 보기: "), el("code", {}, txt(q.repro)),
+        el("button", { class: "zoom", type: "button", onclick: () => copy(txt(q.repro), "명령을 복사했습니다") }, "복사")) : null);
+  }
+  // The expectation/criterion question was asked in chat before the page opened,
+  // so the user committed to an answer before seeing any of grasp's analysis.
+  function predictBlock(c) {
+    const q = obj(c.predict);
+    const mine = txt(q.user_answer);
+    const box = el("div", { class: "card quiz" },
+      el("h4", {}, isReport ? "당신이 먼저 적은 기준" : "당신이 먼저 적은 기대"),
+      el("div", { class: "eyebrow" }, "질문: ", rich(q.question)),
+      el("div", { class: "compare" },
+        el("div", { class: "mine" }, el("h5", {}, isReport ? "당신의 기준" : "당신의 기대"), mine ? para(mine) : el("p", { class: "eyebrow" }, "건너뛰었습니다.")),
+        el("div", { class: "theirs" }, analysis(q, isReport ? "grasp가 읽은 원문 근거:" : "grasp의 분석:"))),
+      txt(q.gap) ? el("div", { class: "gap" }, el("strong", {}, isReport ? "기준과 비교: " : "차이: "), rich(q.gap)) : null,
+      mine && !isReport ? el("div", { class: "eyebrow", style: "margin-top:8px" }, "기대와 다른 부분이 판단할 지점입니다. grasp의 분석도 틀릴 수 있으니 \"직접 확인\" 위치를 열어 보세요.") : null,
+      judgeControl("p" + c.id, isReport ? "원문 근거를 확인했나요?" : "grasp의 분석을 확인했나요?"));
+    return box;
+  }
+  // The user's verdict on grasp's own claim, so a wrong analysis can be rejected and reported back.
+  function judgeControl(key, label) {
+    const opts = [["agree", "확인했고 맞음"], ["unchecked", "아직 확인 안 함"], ["dispute", "틀렸다고 봄"]];
+    const seg = el("div", { class: "seg", role: "group", "aria-label": label });
+    opts.forEach(([val, text]) => {
+      const b = el("button", { type: "button", class: val === "dispute" ? "dispute" : null, "aria-pressed": state.judge[key] === val ? "true" : "false",
+        onclick: () => { state.judge[key] = val; saveState(); seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false")); } }, text);
+      seg.append(b);
+    });
+    return el("div", { class: "pt", style: "margin-top:10px" }, el("span", { class: "eyebrow" }, label), seg);
+  }
+  // Check questions stay on the page. After answering, the key points act as a scoring standard
+  // (comparing idea by idea makes self-scoring less overconfident). Nothing is unlocked by it.
+  function checkBlock(c) {
+    const q = obj(c.check);
+    const key = "k" + c.id;
+    const pts = arr(q.points).map(txt).filter(Boolean);
+    const ta = el("textarea", { placeholder: "자기 말로 답해 보세요.", "aria-label": txt(q.question) });
+    ta.value = state.answers[key] || "";
+    const status = el("div", {});
+    const out = el("div", { "aria-live": "polite" });
+    const go = el("button", { class: "btn", type: "button", disabled: !ta.value.trim(), onclick: () => show(["peek", "late"].includes(state.revealed[key]) ? "late" : "answered") }, "답 확인");
+    const skip = el("button", { class: "btn ghost", type: "button", onclick: () => show("skip") }, "건너뛰기");
+    const buttons = el("div", {}, go, skip);
+    ta.addEventListener("input", () => {
+      state.answers[key] = ta.value;
+      // A changed answer has not been compared yet.
+      pts.forEach((_, i) => { delete state.ticks[c.id + ":" + i]; });
+      out.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", "false"));
+      go.disabled = !ta.value.trim();
+      // Skipped (analysis still hidden): writing an answer reopens the question; the analysis stays hidden
+      // until "답 확인". Analysis already seen: the answer is recorded as written after seeing it.
+      // Erasing the answer leaves "analysis seen without an answer".
+      const st = state.revealed[key];
+      if (ta.value.trim() && st === "skip") { delete state.revealed[key]; status.replaceChildren(); skip.hidden = false; }
+      else if (ta.value.trim() && st === "peek") { state.revealed[key] = "late"; status.replaceChildren(el("div", { class: "eyebrow" }, "분석을 본 뒤에 쓴 답으로 기록합니다.")); }
+      else if (!ta.value.trim() && (st === "answered" || st === "late")) { state.revealed[key] = "peek"; status.replaceChildren(el("div", { class: "eyebrow" }, "답을 지웠습니다. 분석은 그대로 볼 수 있습니다.")); }
+      saveState(); buildNav();
+    });
+    function analysisView() {
+      // Re-rendering: give back the glossary terms this block had claimed, so they are underlined again here.
+      out.querySelectorAll("dfn").forEach(d => viewSeen(c).delete(d.textContent));
+      out.replaceChildren(el("div", { class: "reveal" }, analysis(q, "grasp의 분석:")));
+      if (pts.length) {
+        // The points are grasp's analysis, not an answer key: the user can also say a point is wrong.
+        const sc = el("div", { class: "selfcheck", style: "margin-top:10px" },
+          el("div", { class: "eyebrow" }, "grasp가 꼽은 핵심과 내 답을 비교해 보세요. grasp도 틀릴 수 있으니, 틀렸다고 보면 그렇게 표시하세요."));
+        pts.forEach((p, i) => {
+          const tk = c.id + ":" + i;
+          const opts = [["have", "내 답에 있음"], ["miss", "없음"], ["dispute", "이 핵심이 틀렸다고 봄"]];
+          const seg = el("div", { class: "seg", role: "group", "aria-label": p });
+          opts.forEach(([val, label]) => {
+            const b = el("button", { type: "button", class: val === "dispute" ? "dispute" : null, "aria-pressed": state.ticks[tk] === val ? "true" : "false",
+              onclick: () => { state.ticks[tk] = val; saveState(); seg.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false")); } }, label);
+            seg.append(b);
+          });
+          sc.append(el("div", { class: "pt" }, el("span", {}, rich(p)), seg));
+        });
+        out.append(sc);
+      }
+      applyGlossary(out, viewSeen(c));
+    }
+    function show(how) {
+      state.revealed[key] = how;
+      // Keep the answer as it was before the analysis was first shown, so later edits are not mistaken for it.
+      if (how === "answered" && state.before[key] === undefined) state.before[key] = ta.value;
+      saveState();
+      if (how === "skip") {
+        status.replaceChildren(el("div", { class: "eyebrow" }, "질문을 건너뛰었습니다. 나중에 답을 적어도 됩니다. ",
+          el("button", { class: "btn ghost", type: "button", onclick: () => show("peek") }, "분석만 보기")));
+        out.replaceChildren();
+      } else {
+        status.replaceChildren(how === "peek" ? el("div", { class: "eyebrow" }, "답을 적지 않고 분석을 봤습니다.")
+          : how === "late" ? el("div", { class: "eyebrow" }, "분석을 본 뒤에 쓴 답으로 기록합니다.") : "");
+        analysisView();
+      }
+      skip.hidden = true;
+      buildNav();
+    }
+    const box = el("div", { class: "card quiz" }, el("h4", {}, "이해 확인"), el("div", {}, rich(q.question)), ta, buttons, status, out);
+    if (state.revealed[key]) queueMicrotask(() => show(state.revealed[key]));
+    return box;
+  }
+
+  // ---- views ------------------------------------------------------------
+  const chunks = arr(data.chunks).map(obj).filter(c => int(c.id) !== null);
+  const pageChunks = chunks.filter(c => c.grade !== "gray");
+  const views = [{ id: "map", label: "지도", icon: "🗺" }]
+    .concat(pageChunks.map(c => ({ id: "c" + c.id, label: c.id + ". " + txt(c.title), icon: (GRADE[c.grade] || ["•"])[0], chunk: c })))
+    .concat([{ id: "wrap", label: "마무리", icon: "✅" }]);
+  const nodes = {};
+  const seenByView = {};
+  const viewSeen = c => (seenByView["c" + c.id] ||= new Set());
+  let current = null;
+
+  function gradeBadge(g) { const [i, l] = GRADE[g] || ["", txt(g)]; return el("span", { class: "grade " + (GRADE[g] ? g : "") }, i + " " + l); }
+  const unreq = c => (c.unrequested === true ? el("span", { class: "badge" }, isReport ? "요청 범위 밖" : "요청에 없음") : null);
+
+  // Where grasp's verdict on a gray or yellow chunk would be proven wrong.
+  function spotLine(c) {
+    const spot = obj(c.spot_check);
+    if (!txt(spot.file) && !txt(spot.command)) return null;
+    return el("div", {},
+      txt(spot.file) ? el("div", { class: "spot" }, "grasp가 틀렸다면 드러날 곳: ", refButton(spot), " ", rich(spot.what)) : null,
+      txt(spot.command) ? el("div", { class: "spot cmd" }, el("span", { class: "lbl" }, "기계적으로 확인: "), el("code", {}, txt(spot.command)),
+        el("button", { class: "zoom", type: "button", onclick: e => { e.stopPropagation(); copy(txt(spot.command), "명령을 복사했습니다"); } }, "복사")) : null);
+  }
+
+  function mapView() {
+    const v = el("section", { class: "view" });
+    v.append(el("div", { class: "eyebrow" }, rich(data.target)));
+    v.append(el("h2", {}, txt(data.title)));
+    const doc = obj(data.doc);
+    if (txt(doc.date) || txt(doc.status)) {
+      v.append(el("div", {}, txt(doc.status) ? el("span", { class: "docbadge" }, "상태: " + txt(doc.status)) : null,
+        txt(doc.date) ? el("span", { class: "docbadge" }, "작성: " + txt(doc.date)) : null,
+        txt(doc.latest) ? el("span", { class: "eyebrow" }, "최신 기준: ", rich(doc.latest)) : null));
+    }
+    if (txt(data.purpose)) v.append(el("div", { class: "eyebrow" }, "목적: " + txt(data.purpose)));
+    if (arr(data.corrections).length) v.append(el("div", { class: "card corrections" }, el("h4", {}, "grasp가 앞서 틀렸던 것 (대화 중 바로잡음)"), list(data.corrections)));
+    if (data._unchecked === true) v.append(el("div", { class: "card warn" }, el("h4", {}, "참조를 저장소와 대조하지 않음"),
+      el("div", {}, "이 페이지는 저장소 경로(root) 없이 만들어져, 파일:줄 위치와 코드 발췌가 실제 파일과 맞는지 확인되지 않았습니다. 본문 속 위치는 눌러 볼 수 없습니다.")));
+    v.append(el("div", { class: "lede" }, rich(data.bottom_line)));
+    v.append(el("div", { class: "card action" }, el("h4", {}, "당신이 할 일"), el("div", {}, rich(data.your_action))));
+    if (arr(data.unverified).length) v.append(el("div", { class: "card warn" }, el("h4", {}, "미확인 (판단을 바꿀 수 있음)"), list(data.unverified)));
+    if (arr(data.not_read).length) v.append(el("div", { class: "card coverage" }, el("h4", {}, "grasp가 얕게 읽은 것"), list(data.not_read)));
+
+    const left = el("div", {}, el("h3", {}, "구성 (중요한 순서)"),
+      el("div", { class: "eyebrow" }, "등급과 분석은 grasp의 판단입니다. 얼마나 정확한지는 아직 측정되지 않았습니다."),
+      el("div", { class: "chunks" }, chunks.map(c => {
+      const gray = c.grade === "gray";
+      const inner = [
+        el("div", { class: "num" }, c.id),
+        el("div", {}, gradeBadge(c.grade), " ", el("span", { class: "t" }, rich(c.title, undefined, !gray)), unreq(c), txt(c.size) ? el("span", { class: "eyebrow" }, "  · " + txt(c.size)) : null),
+        el("div", {}, el("div", { class: "s" }, rich(gray ? c.skip_reason : c.summary, undefined, !gray)), gray ? spotLine(c) : null)
+      ];
+      if (!gray) {
+        // The card is a button, so the yellow "where grasp would be wrong" chip sits just below it.
+        const card = el("button", { class: "card chunk-card", type: "button", onclick: () => go("c" + c.id) }, inner);
+        return c.grade === "yellow" && c.spot_check ? el("div", {}, card, el("div", { class: "spotbelow" }, spotLine(c))) : card;
+      }
+      return el("div", { class: "card chunk-card gray" }, inner);
+    })));
+    const grid = el("div", { class: "mapgrid" + (data.overview ? " two" : ""), "data-two": data.overview ? "1" : null }, left);
+    if (data.overview) grid.append(el("div", { class: "overview" }, el("h3", {}, "전체 그림"), visual(data.overview)));
+    v.append(grid);
+    if (glossary.length) {
+      v.append(el("h3", {}, "새 용어"));
+      v.append(el("dl", { class: "gloss" }, glossary.map(g => [el("dt", {}, el("code", {}, txt(g.term).replace(/`/g, ""))), el("dd", {}, rich(g.def))])));
+    }
+    v.append(footer("map"));
+    return v;
+  }
+
+  function chunkView(c) {
+    const v = el("section", { class: "view" });
+    v._chunkId = c.id;
+    v.append(el("div", {}, gradeBadge(c.grade), unreq(c), txt(c.size) ? el("span", { class: "eyebrow" }, "  · " + txt(c.size)) : null));
+    v.append(el("h2", {}, c.id + ". ", rich(c.title)));
+    if (c.grade === "yellow" && c.spot_check) v.append(el("div", { class: "card coverage" }, spotLine(c)));
+    if (c.predict) v.append(predictBlock(c));
+    if (txt(c.why)) v.append(el("h3", {}, isReport ? "주장" : "핵심"), para(c.why));
+    arr(c.visuals).forEach(x => v.append(visual(x)));
+    if (txt(c.example)) v.append(el("h3", {}, isReport ? "근거와 조건" : "구체적인 예"), para(c.example));
+    if (arr(c.look).length) {
+      v.append(el("h3", {}, "직접 볼 곳"));
+      v.append(el("ul", { class: "plain look" }, c.look.map(r => el("li", {}, refButton(r), " ", rich(obj(r).what)))));
+    }
+    if (arr(c.cautions).length) {
+      v.append(el("h3", {}, "주의"));
+      v.append(el("ul", { class: "plain cautions" }, c.cautions.map(obj).map(x => el("li", {}, lvl(x.evidence), rich(x.text)))));
+    }
+    if (c.check) v.append(el("h3", {}, "확인"), checkBlock(c));
+    v.append(footer("c" + c.id, c));
+    return v;
+  }
+
+  function wrapView() {
+    const w = obj(data.wrap_up);
+    const v = el("section", { class: "view" });
+    v.append(el("h2", {}, "마무리"));
+    if (arr(w.remember).length) v.append(el("h3", {}, "기억할 것"), list(w.remember));
+    if (arr(w.skipped).length) v.append(el("h3", {}, "설명에서 뺀 것과 괜찮은 이유"), list(w.skipped));
+    if (arr(w.open).length) v.append(el("div", { class: "card warn" }, el("h4", {}, "아직 열려 있는 위험과 결정"), list(w.open)));
+    if (txt(data.teach_back)) {
+      const ta = el("textarea", { placeholder: "두세 문장이면 충분합니다.", "aria-label": txt(data.teach_back), style: "min-height:120px" });
+      ta.value = state.answers.teach || "";
+      ta.addEventListener("input", () => { state.answers.teach = ta.value; saveState(); });
+      v.append(el("h3", {}, "정리해 보기"), el("div", { class: "card quiz" }, el("h4", {}, "자기 말로 적어 보세요"), el("div", {}, rich(data.teach_back)), ta));
+    }
+    v.append(el("button", { class: "btn", type: "button", onclick: () => copy(collectAnswers(), "답변을 복사했습니다. 채팅에 붙여 넣으세요", true) }, "내 답변 전부 복사 (채팅에 붙여 넣기용)"), " ",
+      el("button", { class: "btn ghost", type: "button", onclick: () => printAll() }, "전체 인쇄 (모든 그림을 그린 뒤)"));
+    v.append(footer("wrap"));
+    return v;
+  }
+
+  function collectAnswers() {
+    const a = state.answers, r = state.revealed, t = state.ticks;
+    const mark = { have: "있음", miss: "없음", dispute: "틀렸다고 봄" };
+    const lines = ["[grasp 답변] " + txt(data.title)];
+    const jl = { agree: "확인했고 맞음", unchecked: "아직 확인 안 함", dispute: "틀렸다고 봄" };
+    pageChunks.forEach(c => {
+      const j = state.judge["p" + c.id];
+      if (c.predict && j) lines.push(`${c.id}번 grasp의 분석(${txt(obj(c.predict).answer).slice(0, 60)}…) → ${jl[j]}` + (j === "agree" && !state.opened["p" + c.id] ? " (이 덩어리의 확인 위치를 하나도 누르지 않음)" : ""));
+    });
+    pageChunks.forEach(c => {
+      if (!c.check) return;
+      const q = obj(c.check), k = "k" + c.id;
+      const pts = arr(q.points).map(txt).filter(Boolean);
+      const marked = pts.map((p, i) => [p, t[c.id + ":" + i]]).filter(([, m]) => m);
+      if (!a[k] && !r[k] && !marked.length) return;
+      const before = txt(state.before[k]), now = txt(a[k]);
+      const edited = before && now && before.trim() !== now.trim();
+      const stateLabel = r[k] === "skip" ? " (건너뜀)"
+        : r[k] === "peek" ? (now ? " (답을 확정하기 전에 분석을 봄)" : before ? " (분석을 본 뒤 답을 지움)" : " (답 없이 분석만 봄)")
+        : r[k] === "late" ? (before ? " (분석을 본 뒤 답을 다시 씀)" : " (분석을 본 뒤에 쓴 답)")
+        : edited ? " (분석을 본 뒤 답을 고침)" : "";
+      let line = `${c.id}번 확인${stateLabel} — Q: ${txt(q.question)}`;
+      if (before && (edited || !now)) line += `\nA (분석 보기 전): ${before}`;
+      if (now && (edited || !before)) line += `\n${before ? "고친 답 (분석을 본 뒤)" : "A"}: ${now}`;
+      else if (now) line += `\nA: ${now}`;
+      if (marked.length) line += "\ngrasp의 핵심과 비교: " + marked.map(([p, m]) => p + " → " + mark[m]).join(" / ");
+      lines.push(line);
+    });
+    if (a.teach) lines.push("정리:\n" + a.teach);
+    if (lines.length === 1) lines.push("(아직 적은 답이 없습니다)");
+    return lines.join("\n\n");
+  }
+
+  function footer(id, c) {
+    const i = views.findIndex(x => x.id === id);
+    const prev = views[i - 1], next = views[i + 1];
+    const f = el("div", { class: "foot" });
+    f.append(prev ? el("button", { class: "btn ghost", type: "button", onclick: () => go(prev.id) }, "← ", rich(prev.label, undefined, true)) : el("span"));
+    if (c) {
+      const cb = el("input", { type: "checkbox" });
+      cb.checked = !!state.done[c.id];
+      cb.addEventListener("change", () => { state.done[c.id] = cb.checked; saveState(); buildNav(); });
+      f.append(el("label", {}, cb, "다 봤어요"));
+    }
+    f.append(next ? el("button", { class: "btn", type: "button", onclick: () => go(next.id) }, rich(next.label, undefined, true), " →") : el("span"));
+    return f;
+  }
+
+  function buildNav() {
+    const nav = document.getElementById("nav");
+    const n = pageChunks.filter(c => state.done[c.id]).length;
+    nav.replaceChildren(
+      el("h1", {}, txt(data.title)),
+      el("div", { class: "sub" }, txt(obj(data.doc).status) ? "상태: " + txt(obj(data.doc).status) + " · " : "", "덩어리 " + chunks.length + "개"),
+      ...views.map(v => el("button", { type: "button", "aria-current": current === v.id ? "page" : null, onclick: () => go(v.id) },
+        el("span", { "aria-hidden": "true" }, v.icon), el("span", {}, rich(v.label, undefined, true)),
+        v.chunk && state.revealed["k" + v.chunk.id] === "answered" ? el("span", { class: "chk" }, "확인함") : null,
+        v.chunk && state.done[v.chunk.id] ? el("span", { class: "done", "aria-label": "다 봄" }, "✓") : null)),
+      el("div", { class: "progress" }, `본 덩어리 ${n} / ${pageChunks.length}`, el("div", { class: "bar" }, el("i", { style: `width:${pageChunks.length ? (100 * n / pageChunks.length) : 0}%` }))),
+      el("div", { class: "keys" }, "← → 키로 이동")
+    );
+  }
+
+  function build(id) {
+    if (nodes[id]) return nodes[id];
+    const v = views.find(x => x.id === id);
+    nodes[id] = id === "map" ? mapView() : id === "wrap" ? wrapView() : chunkView(v.chunk);
+    applyGlossary(nodes[id], seenByView[id] ||= new Set());
+    nodes[id].hidden = true;
+    document.getElementById("main").append(nodes[id]);
+    return nodes[id];
+  }
+  // Printing shows every view, so build the ones not visited yet, in reading order.
+  // Printing shows every view. "전체 인쇄" waits for every diagram; the browser's own print command cannot wait,
+  // so it gets whatever has finished drawing.
+  function buildAll() {
+    const main = document.getElementById("main");
+    views.forEach(v => build(v.id));
+    views.forEach(v => main.append(nodes[v.id]));
+    return renderDiagrams(main);
+  }
+  async function printAll() { await buildAll(); window.print(); }
+  window.addEventListener("beforeprint", () => { buildAll(); });
+  function go(id) { if (location.hash.slice(1) !== id) location.hash = id; else show(id); }
+  function show(id) {
+    if (!views.some(v => v.id === id)) id = "map";
+    current = id;
+    document.getElementById("main").classList.toggle("wide", id === "map");
+    build(id);
+    Object.entries(nodes).forEach(([k, n]) => { n.hidden = k !== id; });
+    buildNav();
+    window.scrollTo(0, 0);
+    refit(nodes[id]);
+    return renderDiagrams(nodes[id]);
+  }
+
+  function refit(root) {
+    diagrams.filter(b => b._needsFit && root.contains(b)).forEach(b => { const s = b.querySelector("svg"); if (s) fitSvg(s, b); });
+  }
+  let resizeT;
+  window.addEventListener("resize", () => { clearTimeout(resizeT); resizeT = setTimeout(() => {
+    document.querySelectorAll(".mapgrid[data-two]").forEach(g => g.classList.add("two"));
+    diagrams.forEach(b => { b._needsFit = true; }); if (nodes[current]) refit(nodes[current]); }, 150); });
+  window.addEventListener("hashchange", () => show(location.hash.slice(1)));
+  document.addEventListener("keydown", e => {
+    if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.target.closest && e.target.closest("textarea, input, select, [contenteditable], .overlay, .exportbox")) return;
+    if (document.querySelector(".overlay, .exportbox")) return;
+    const i = views.findIndex(v => v.id === current);
+    if (e.key === "ArrowRight" && views[i + 1]) go(views[i + 1].id);
+    if (e.key === "ArrowLeft" && views[i - 1]) go(views[i - 1].id);
+  });
+
+  // Used by scripts/build.py: render every view and diagram and report status.
+  async function verifyAll() {
+    const start = current;
+    for (const v of views) await show(v.id);
+    await show(start);
+    return diagrams.map(b => ({ status: b.dataset.mermaid, note: (b.querySelector(".note") || {}).textContent || "", source: b._src.split("\n")[0], overview: !!b.closest(".overview"), width: b._naturalWidth || 0, height: b._naturalHeight || 0 }));
+  }
+
+  try {
+    show(location.hash.slice(1) || "map");
+  } catch (e) {
+    if (verifying) document.body.dataset.graspVerify = JSON.stringify([{ status: "crashed", note: String(e), source: "", width: 0 }]);
+    throw e;
+  }
+  if (verifying) {
+    verifyAll().then(r => { document.body.dataset.graspVerify = JSON.stringify(r); },
+      e => { document.body.dataset.graspVerify = JSON.stringify([{ status: "crashed", note: String(e), source: "", width: 0 }]); });
+  }
+})();
+</script>
+</body>
+</html>
