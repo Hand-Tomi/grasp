@@ -283,8 +283,8 @@
         "file": "src/checkout/service.ts",
         "line": 88,
         "end": 120,
-        "what": "이름 외의 토큰이 바뀐 줄이 가장 많은 곳으로 grasp가 고른 위치. 아래 명령이 무엇이든 출력하면 그곳이 먼저 볼 곳입니다.",
-        "command": "git diff --word-diff=porcelain --word-diff-regex='[A-Za-z0-9_]+|[^[:space:]]' main...feature/coupon -- src/checkout | grep -E '^[-+]' | grep -vE '^(---|\\+\\+\\+) ' | grep -vxE -e '-OrderForm' -e '\\+CheckoutForm'; git diff main...feature/coupon -- src/checkout | grep -E '^[-+](.*[\"'\"'\"'](OrderForm|CheckoutForm)[\"'\"'\"']|[[:space:]]*export[[:space:]].*(OrderForm|CheckoutForm))'; git grep -n -w CheckoutForm main -- src; git grep -n -w OrderForm feature/coupon -- src; git diff main...feature/coupon -- . ':(exclude)src/checkout' | grep -E '^[-+].*(OrderForm|CheckoutForm)'; git diff --numstat main...feature/coupon -- src/checkout | grep '^-'"
+        "what": "변경 범위가 가장 큰 곳으로 grasp가 고른 위치. 아래 첫 명령이 PASS와 종료 코드 0이 아니거나, 나머지 명령이 무엇이든 출력하면 먼저 볼 곳입니다. Git 오류도 통과가 아닙니다.",
+        "command": "python3 <이 스킬 폴더>/scripts/check_rename.py main...feature/coupon OrderForm CheckoutForm -- src/checkout\ngit diff main...feature/coupon -- src/checkout | grep -E '^[-+](.*[\"'\"'\"'](OrderForm|CheckoutForm)[\"'\"'\"']|[[:space:]]*export[[:space:]].*(OrderForm|CheckoutForm))'\ngit grep -n -w CheckoutForm main -- src\ngit grep -n -w OrderForm feature/coupon -- src\ngit diff main...feature/coupon -- . ':(exclude)src/checkout' | grep -E '^[-+].*(OrderForm|CheckoutForm)'\ngit diff --numstat main...feature/coupon -- src/checkout | grep '^-'"
       }
     }
   ],
@@ -295,7 +295,7 @@
       "쿠폰의 동시 사용 방지는 DB 마이그레이션에 기대므로, 배포 순서를 확인해야 합니다."
     ],
     "skipped": [
-      "이름 변경 800줄. diff 전체를 읽었고, 4번의 명령으로 이름 외의 변경이 없는지 직접 확인할 수 있습니다 (출력이 없어야 함)."
+      "이름 변경 800줄. diff 전체를 읽었고, 4번의 명령으로 지정한 이름 치환 외의 변경과 범위를 직접 확인할 수 있습니다 (첫 명령은 PASS와 종료 코드 0, 나머지는 출력과 Git 오류가 없어야 함)."
     ],
     "open": [
       "환불 변경이 버그인지 정책인지",

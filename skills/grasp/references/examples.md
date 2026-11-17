@@ -30,17 +30,17 @@
 1. 🔴 환불 금액 계산 변경 (약 40줄, 요청에 없음) — 쿠폰 주문의 환불 계산식이 바뀜.
 2. 🔴 쿠폰 검증과 예약 (약 300줄) — 요청한 핵심 로직이지만, 동시 사용 방지가 이 브랜치의 DB 마이그레이션(고유 키)에 기댐. 되돌리기 어려운 변경.
 3. 🟡 테스트 (약 400줄) — 적용 경로만 검증, 환불 경로 테스트는 없음. 틀렸다면 드러날 곳: `src/coupon/apply.test.ts:40` (중복 사용 거절을 단언한다고 읽었음. 호출만 한다면 🔴)
-4. ⚪ 이름 변경 (약 800줄, 요청에 없음) — grasp 판단: 건너뛰어도 됨. `src/checkout` 안에서만 쓰는 `OrderForm` → `CheckoutForm`, diff 전체를 읽었고 밖에서 쓰는 이름은 바뀌지 않음. 틀렸다면 드러날 곳: `src/checkout/service.ts:88` (이름 외의 토큰이 바뀐 줄이 가장 많은 곳). 기계적 확인은 아래 명령 (모두 출력이 없어야 함)
+4. ⚪ 이름 변경 (약 800줄, 요청에 없음) — grasp 판단: 건너뛰어도 됨. `src/checkout` 안에서만 쓰는 `OrderForm` → `CheckoutForm`, diff 전체를 읽었고 밖에서 쓰는 이름은 바뀌지 않음. 틀렸다면 드러날 곳: `src/checkout/service.ts:88` (변경 범위가 가장 큰 곳). 기계적 확인은 아래 명령
 
 **새 용어** `CouponLedger`: 쿠폰 사용 예약과 기록을 남기는 테이블.
 
 1번부터 볼까요?
 ```
 
-지도가 길어지지 않도록 기계적 확인 명령은 지도 아래에 따로 붙인다. 앞의 셋은 이름 변경만 있는지, 뒤의 셋은 grasp가 주장한 범위(`src/checkout`)가 맞는지 본다. 범위 안으로만 제한한 확인은 그 범위가 틀렸다는 것을 잡지 못하기 때문이다.
+지도가 길어지지 않도록 기계적 확인 명령은 지도 아래에 따로 붙인다. 첫 명령은 `PASS`와 종료 코드 0이어야 한다. 나머지는 출력이 없어야 하며, Git 오류가 나면 통과가 아니다. 문자열·공개 API 변경, 바이너리, 이름 충돌, grasp가 주장한 범위(`src/checkout`)를 별도로 확인한다. 아래는 `main`이 이 브랜치의 공통 조상인 예시다.
 
 ```bash
-git diff --word-diff=porcelain --word-diff-regex='[A-Za-z0-9_]+|[^[:space:]]' main...feature/coupon -- src/checkout | grep -E '^[-+]' | grep -vE '^(---|\+\+\+) ' | grep -vxE -e '-OrderForm' -e '\+CheckoutForm'
+python3 <이 스킬 폴더>/scripts/check_rename.py main...feature/coupon OrderForm CheckoutForm -- src/checkout
 git diff main...feature/coupon -- src/checkout | grep -E '^[-+](.*["'"'"'](OrderForm|CheckoutForm)["'"'"']|[[:space:]]*export[[:space:]].*(OrderForm|CheckoutForm))'
 git diff --numstat main...feature/coupon -- src/checkout | grep '^-'
 git grep -n -w CheckoutForm main -- src                                                     # 새 이름이 원래 있던 이름과 겹치는지

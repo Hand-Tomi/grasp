@@ -1,0 +1,3 @@
+interface:
+  display_name: "grasp"
+  short_description: "긴 diff·PR·리포트를 지도, 덩어리별 설명, 확인 질문으로 이해시킨다"
